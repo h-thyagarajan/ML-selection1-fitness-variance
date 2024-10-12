@@ -2,17 +2,17 @@
 
 ## Description of the data and file structure
 
-This data was collected to answer whether 3 decades and 1500 generations of divergent life history selection on age at reproduction has resulted in speciation between laboratory populations of Drosophila melanogaster. We tested the existence of premating, postmating-prezygotic and postzygotic reproductive isolation between 3 replicate pairs of early breeding ACO and late breeding CO populations in 2019-2020. Results from individual male and female mate choice trials indicate that populations from both selection treatments show a marked bias towards homotypic mate choice, indicative of prezygotic reproductive isolation. Hybrid offspring were viable with intermediate size and developmental traits. We found no significant evidence suggesting the evolution of postmating-prezygotic or postzygotic reproductive isolation. Our results agree with previous findings that premating barriers evolve before postmating forms of reproductive isolation.
+This data was collected to answer whether experimentally selecting exclusively on the basis of male reproductive fitness produced evolved changes in selected populations of Drosophila melanogaster, specifically in the context of genetic variance for fitness. We utilised a protocol similar to the one devised by Bill Rice in 1996, 1998 (citations within) to conduct our selection experiment for over 80 generations between 2020-2024. Importantly, we use three novel base populations to compare results with those from the LH(M) population, the sole population investigated using this technique. In contrast with previous studies, we find no evidence of selected (ML) male improvement under generic conditions relative to controls (MC). However, genetic variation for male fitness was reduced (but see discussion). Female fitness reduced consistently as predicted by sexual antagonism. Our results are only partially consistent with the IaSC hypothesis, raising questions about the relative contribution of sexual conflict to the standing genetic variation in these populations and the potential role of artefacts in the protocol that may have obscured our ability to detect IaSC. 
 
-The presented data is derived from a series of mate choice and hybrid viability assays. In most data files populations are referred to by the shortform A (ACO) and C (CO), and replicates are noted using numbers 1-3 (A1-A3, C1-C3). For mate choice assays coloured dye (red or blue) via food intake was used to differentiate flies from different populations. For hybrid viability assays, parental (P/WT), first generation (F1) and second generation (F2) hybrid crosses (BT) were tested. 
+The presented data is derived from competitive reproductive fitness (CRF) assays, mate choice, sperm offense assays. Fitness assays were conducted on samples from the selected and control populations directly, but also on hemiclonal samples to assay heritable variation.
 
 ## A description of specific .csv files:
 
-### ‘Group choice – compiled data.csv’
-This data was collected during a group mate choice assay where 10 females and 12 males from each regime were combined in vials. The assay was repeated over 2 days, with 10 vials tested for each replicate population during each day. 
+### Population CRF: 'F_CRF_wt.cr.csv’; 'M_CRF_wt.cr.csv’ - female and male data respectively.
+30 test animals combined with 30 recessively marked competitors of the same sex and 50 recesively marked individuals of the opposite sex. Offspring phenotyped for fitness estimates.
 
-•	‘Day’ - Observations were conducted over 2 days (using animals collected at staggered times to account for age). These are recorded as ‘1’ or ‘2’.
-•	'Mated female pop’ and ‘Female ID’ provide info on the selection treatment the female belongs to. ‘Female ID’ additionally also provides info on the replicate population of females. 
+•	‘Gen’ - Generation the experiment was conducted. Should include values such as '48', '64' etc.
+•	 skdjcnaljbnal cont here
 •	‘Vial Number’ refers to the serial number supplied to repeated measurements in a treatment to distinguish them.
 •	‘number mating pairs’ records the number of pairs observed mating in each vial.
 •	‘number mated blue/red’ indicates the number of male flies of each colour observed mating. The males were then identified by population using the labelling scheme and this is noted under the columns ‘number mated As/Cs’.
