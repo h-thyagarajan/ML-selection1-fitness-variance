@@ -1,0 +1,244 @@
+---
+title: "CH1 Figures"
+author: "HT"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(cowplot)
+library(grid)
+library(gridExtra)
+```
+
+```{r}
+setwd("/Users/ht/0/Data/ML_selection/1MS - No replication?/Scripts")
+source(file = "PlotFns.R")
+```
+
+##################################################
+**Fitness plots**
+##################################################
+
+```{r}
+M_CRF_gen50plot <- M_CRF_gen50 %>% 
+  ggplot() +
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() + guides(fill = "none") +
+  labs(title = "(a)", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_pub
+
+M_CRF_gen64plot <- M_CRF_gen64 %>% 
+  ggplot() +
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() + guides(fill = "none") +
+  labs(title = "(b)", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_pub
+
+M_CRF_gen70plot <-M_CRF_gen70 %>% 
+  ggplot() +
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() + 
+  labs(title = "", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_pub
+
+F_CRF_gen48plot <- F_CRF_gen48 %>% 
+  ggplot() +
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() + 
+  labs(title = "(c)", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_pub
+
+F_CRF_gen50plot <- F_CRF_gen50 %>% 
+  ggplot() + 
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() +
+  labs(title = "(d)", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_pub
+```
+
+
+```{r}
+plot <- plot_grid(M_CRF_gen50plot + theme(legend.position="none", 
+                                  axis.text.x = element_blank(),
+                                  axis.ticks.x = element_blank()),
+                  M_CRF_gen64plot + theme(legend.position="none", 
+                                  axis.text.x = element_blank(),
+                                  axis.ticks.x = element_blank(),
+                                  axis.text.y = element_blank(),
+                                  axis.ticks.y = element_blank()),
+                  F_CRF_gen48plot + theme(legend.position="none"),
+                  F_CRF_gen50plot + theme(legend.position="none", 
+                                  axis.text.y = element_blank(),
+                                  axis.ticks.y = element_blank()),
+                  nrow=2,
+                  rel_widths = c(1,0.9))
+
+legend <- cowplot::get_legend(F_CRF_gen50plot)
+
+y.grob <- textGrob("Fitness", gp=gpar(col="black",
+                                      fontsize=12, 
+                                      fontfamily="Times New Roman"), rot=90)
+
+x.grob <- textGrob("Replicate", gp=gpar(col="black", 
+                                        fontsize=12, 
+                                        fontfamily="Times New Roman"))
+
+#fig1
+grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, right=legend))
+```
+
+```{r}
+#fig2
+grid.arrange(arrangeGrob(M_CRF_gen70plot , left = y.grob, bottom = x.grob))
+```
+
+##################################################
+**Mate choice**
+##################################################
+
+```{r}
+MC_success <- ggplot(wtmatecount, aes(x = Replicate, y = Mean, color=Selection)) +
+    geom_point() + ylim(0,1) +
+    labs(title = "(a)", x = "Replicate", y = "Mating success") + theme_pub
+
+MC_latency <- ggplot(data=M_MC[M_MC$Mated.male=="wt",], 
+  aes(x=Replicate, fill=Selection, y=log(Latency))) +
+  geom_boxplot() + 
+  labs(title = "(a)", x = "Replicate", y = "log(Mating Latency)") + theme_pub
+
+MC_duration <- ggplot(data=M_MC[M_MC$Mated.male=="wt",], 
+  aes(x=Replicate, fill=Selection, y=Duration)) +
+  geom_boxplot() +
+  labs(title = "(b)", x = "Replicate", y = "Duration") + theme_pub
+
+MC_fec.init <- ggplot(data=M_MC[M_MC$Mated.male=="wt",], 
+  aes(x=Replicate, fill=Selection, y=Males+Females)) +
+  geom_boxplot() + ylim(10,100) +
+  labs(title = "(d)", x = "Replicate", y = "Fecundity initiated") + theme_pub
+
+MC_srd <- ggplot(data=M_MC[M_MC$Mated.male=="wt",], 
+  aes(x=Replicate, fill=Selection, y=Males/(Males+Females))) +
+  geom_boxplot() + ylim(0,1) +
+  labs(title = "(c)", x = "Replicate", y = "Sex Ratio") + theme_pub
+
+SC <- ggplot(M_SC, aes(x = Replicate, y = WT/(U+WT), fill=Treatment)) +
+  geom_boxplot() +
+  labs(title = "(b)", x = "Replicate", y = "P2 Success") +
+  theme_pub
+```
+
+```{r}
+y.grob1 <- textGrob("log(Latency)", 
+                    gp=gpar(col="black", fontsize=12, fontfamily="Times New Roman"), 
+                    rot=90)
+
+y.grob2 <- textGrob("Duration", 
+                    gp=gpar(col="black", fontsize=12, fontfamily="Times New Roman"), 
+                    rot=90)
+
+y.grob3 <- textGrob("Sex Ratio", 
+                    gp=gpar(col="black", fontsize=12, fontfamily="Times New Roman"), 
+                    rot=90)
+
+y.grob4 <- textGrob("Fecundity initiated", 
+                    gp=gpar(col="black", fontsize=12, fontfamily="Times New Roman"), 
+                    rot=90)
+
+
+plot <- plot_grid(y.grob1,
+                  MC_latency + theme(legend.position="none", 
+                                  axis.text.x = element_blank(),
+                                  axis.ticks.x = element_blank()),
+                  y.grob2,
+                  MC_duration + theme(legend.position="none", 
+                                  axis.text.x = element_blank(),
+                                  axis.ticks.x = element_blank()),
+                  y.grob3,
+                  MC_srd + theme(legend.position="none"),
+                  y.grob4,
+                  MC_fec.init + theme(legend.position="none"),
+                  nrow=2, rel_widths = c(0.1,1,0.1,0.9))
+
+legend <- cowplot::get_legend(MC_srd)
+
+x.grob <- textGrob("Replicate", gp=gpar(col="black", 
+                                        fontsize=12, 
+                                        fontfamily="Times New Roman"))
+
+#fig3
+grid.arrange(arrangeGrob(plot, bottom = x.grob, right=legend))
+```
+
+```{r, warning=F}
+y.grob2 <- textGrob("Sperm Offense", 
+                    gp=gpar(col="black", fontsize=12, fontfamily="Times New Roman"), 
+                    rot=90)
+
+plot <- plot_grid(MC_success + theme(legend.position="none"),
+                  y.grob2,
+                  SC + theme(legend.position="none"),
+                  nrow=1, rel_widths = c(1,0.1,1.5))
+
+legend <- cowplot::get_legend(SC)
+
+y.grob1 <- textGrob("Mating Success", gp=gpar(col="black",
+                                      fontsize=12, 
+                                      fontfamily="Times New Roman"), rot=90)
+
+x.grob <- textGrob("Replicate", gp=gpar(col="black", 
+                                        fontsize=12, 
+                                        fontfamily="Times New Roman"))
+#fig4
+grid.arrange(arrangeGrob(plot, left=y.grob1, bottom = x.grob, right=legend))
+```
+
+```{r}
+mdata <- M_HC.CRF %>% group_by(Selection, Line) %>% summarise(male_w=mean(w), male_sd=sd(w), m.count=n())
+fdata <- F_HC.CRF %>% group_by(Selection, Line) %>% summarise(female_w=mean(Dam.Productivity), female_sd=sd(Dam.Productivity), f.count=n())
+
+linedata <- cbind(mdata, fdata[, 3:5])
+
+HC <- ggplot(linedata, aes(x = female_w, y = male_w, color = Selection)) +
+  geom_point() + geom_smooth(method = "lm") +
+  labs(x = "Female Productivity", 
+       y = "Male Competitive Fitness", 
+       title = "Hemiclone fitness analysis") +
+  theme_pub_sing 
+```
+```{r}
+x <- seq(0, 1, length=100)
+y1 <- dnorm(x, mean=0.5534155, sd=0.163961)
+#y1 <- y1/max(y1)
+y2 <- dnorm(x, mean=0.454156, sd=0.2026641)
+#y2 <- y2/max(y2)
+y.1 <- dnorm(x, mean=0.5534155, sd=0.037)
+y.1 <- y.1/(max(y.1)/max(y1))
+y.2 <- dnorm(x, mean=0.454156, sd=0.08548099)
+y.2 <- y.2/(max(y.2)/max(y2))
+
+df <- data.frame(x=x, y1=y1, y2=y2, y.1=y.1, y.2=y.2)
+
+m_h.var <- ggplot(df, aes(x=x)) +
+  geom_line(aes(y=y1), color="#00BFC4", linetype = "dashed") +
+  geom_line(aes(y=y.1), color="#00BFC4") +
+  geom_ribbon(aes(ymin=0, ymax=y.1), fill="#00BFC4", alpha=0.8) +
+  geom_line(aes(y=y2), color="#F8766D", linetype = "dashed") +
+  geom_line(aes(y=y.2), color="#F8766D") +
+  geom_ribbon(aes(ymin=0, ymax=y.2), fill="#F8766D", alpha=0.8) +
+  labs(title = "Male fitness - Heritable variation", x = "Fitness", y = "Density") +
+  theme_pub_sing
+
+ML = M_HC.CRF[M_HC.CRF$Selection=="ML",]$w
+MC = M_HC.CRF[M_HC.CRF$Selection=="MC",]$w
+MC[182:186] = NA
+hist_data <- data.frame(ML, MC)
+
+m_h_hist <- ggplot(hist_data) +
+  geom_histogram(aes(x=ML), bins = 9, fill = "#00BFC4", colour = "black", alpha = 0.8) +
+  geom_histogram(aes(x=MC), bins = 9, fill = "#F8766D", colour = "black", alpha = 0.7) +
+  xlim(0,1) +
+  labs(title = "Male fitness - Heritable variation", x="Fitness", y="Frequency") +
+  theme_pub_sing
+```

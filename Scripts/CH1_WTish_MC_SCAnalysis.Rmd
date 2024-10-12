@@ -1,0 +1,242 @@
+---
+title: "Ch1 Mate choice, Sperm comp, Mate harm"
+author: "HT"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(dplyr)
+require(ggplot2)
+require(ggfortify)
+require(MuMIn)
+require(gridExtra)
+require(car)
+require(agricolae)
+require(nlme)
+require(lme4)
+require(lmerTest)
+require(DHARMa)
+require(emmeans)
+```
+
+##################################################
+**Generation 67 - Male mate choice**
+##################################################
+
+Data input, structure management
+```{r}
+M_MC <- na.omit(read.csv(file.choose())) #Select M_MC
+cols <- c("Selection", "Background", "Replicate", "Female")
+M_MC[cols] <- lapply(M_MC[cols], factor) 
+
+M_MC$wtmate <- as.integer(M_MC$Mated.male == "wt")
+wtmatecount <- M_MC %>% group_by(Selection, Replicate) %>% summarize(Mean = mean(wtmate), Count = n())
+```
+
+Step 1: Data visualization
+```{r}
+ggplot(wtmatecount, aes(x = Replicate, y = Mean, color=Selection)) +
+    geom_point() + ylim(0,1) +
+    labs(title = "Mating success", x = "Selection", y = "Mean") +
+    theme_classic()
+```
+Step 2: Model fitting
+
+```{r}
+fit1 <- glm(wtmate ~ Selection*Replicate, family=binomial, data=M_MC)
+Anova(fit1, test.statistic = "F")
+```
+Step 3: Model assumptions - visual tests
+
+```{r}
+MCOutput <- simulateResiduals(fittedModel=fit1)
+plot(MCOutput)
+testDispersion(MCOutput)
+
+plotResiduals(MCOutput, M_MC$Replicate, quantreg = T)
+
+interaction_term <- interaction(M_MC$Selection, M_MC$Replicate)
+bartlett.test(residuals(fit1)~interaction_term)
+```
+Step 4: Data summary
+
+```{r}
+wtmatecount
+```
+
+##################################################
+**Generation 67 - Mating latency, duration**
+##################################################
+
+Step 1: Data visualization
+```{r}
+M_MC_wt <- M_MC %>% filter(wtmate=="1")
+ggplot(data=M_MC_wt, aes(x=Replicate, fill=Selection, y=log(Latency))) +
+  geom_boxplot()+
+  theme_classic()
+```
+
+
+```{r}
+ggplot(data=M_MC_wt, aes(x=Replicate, fill=Selection, y=Duration)) +
+  geom_boxplot()+
+  theme_classic()
+```
+
+Step 2: Model fitting
+```{r}
+fitl1 <- lm(log(Latency+2) ~ Selection*Replicate, data=M_MC_wt)
+anova(fitl1)
+
+fitd1 <- lm(Duration ~ Selection*Replicate, data=M_MC_wt)
+anova(fitd1)
+```
+
+Step 3: Model assumptions - visual tests
+```{r}
+interaction_term <- interaction(M_MC_wt$Selection, M_MC_wt$Replicate)
+
+plot(resid(fitl1))
+hist(resid(fitl1))
+
+bartlett.test(residuals(fitl1)~interaction_term)
+
+plot(resid(fitd1))
+hist(resid(fitd1))
+
+bartlett.test(residuals(fitd1)~interaction_term)
+```
+Step 4: Data summary
+
+```{r}
+time.stats <- M_MC_wt %>% group_by(Selection) %>% 
+  summarize(MeanL = mean(Latency), 
+            MeanD = mean(Duration), 
+            Count = n(), 
+            CI.L = sd(Latency)*1.96/sqrt(n()), 
+            CI.D = sd(Duration)*1.96/sqrt(n()))
+
+time.stats1 <- M_MC_wt %>% group_by(Selection, Replicate) %>% 
+  summarize(MeanL = mean(log(Latency+2)), 
+            MeanD = mean(Duration), 
+            Count = n(), 
+            CI.L = sd(log(Latency))*1.96/sqrt(n()), 
+            CI.D = sd(Duration)*1.96/sqrt(n()))
+```
+
+##################################################
+**Generation 67 - Fecundity initiation**
+##################################################
+
+Step 1: Data visualization
+```{r}
+ggplot(M_MC_wt, aes(x = Replicate, y = Males+Females, fill=Selection)) +
+    geom_boxplot() + ylim(0,100) +
+    theme_classic()
+```
+
+Step 2: Model fitting
+```{r}
+fit3 <- lm(Males+Females ~ Selection*Replicate, data=M_MC_wt)
+anova(fit3)
+```
+
+Step 3: Model assumptions - visual tests
+```{r}
+plot(resid(fit3))
+hist(resid(fit3))
+
+bartlett.test(residuals(fit3)~M_MC_wt$Selection)
+```
+Step 4: Data summary
+
+```{r}
+fec.stats <- M_MC %>% group_by(Selection) %>% summarize(Mean = mean(Males+Females), Count = n(), CI = sd(Males+Females)*1.96/sqrt(n()))
+```
+
+##################################################
+**Generation 67 - Sex ratio drivers**
+##################################################
+
+Step 1: Data visualization
+```{r}
+ggplot(M_MC_wt, aes(x = Replicate, y = Males/(Males+Females), fill=Selection)) +
+    geom_boxplot() +
+    theme_classic()
+```
+
+Step 2: Model fitting
+```{r}
+fit4 <- lm(Males/(Males+Females) ~ Selection*Replicate, data=M_MC_wt)
+anova(fit4)
+```
+
+Step 3: Model assumptions - visual tests
+```{r}
+plot(resid(fit4))
+hist(resid(fit4))
+
+interaction_term <- interaction(M_MC_wt$Selection, M_MC_wt$Replicate)
+bartlett.test(residuals(fit4)~interaction_term)
+```
+Step 5: Data summary
+```{r}
+SRD.stats <- M_MC_wt[M_MC_wt$Males+M_MC_wt$Females!=0,] %>% group_by(Selection) %>% summarize(Mean = mean(Males/(Males+Females)), Count = n(), CI = sd(Males/(Males+Females))*1.96/sqrt(n()))
+```
+
+##################################################
+**Generation 75 - Male sperm comp**
+##################################################
+
+Data input, structure management
+```{r}
+M_SC <- na.omit(read.csv(file.choose(), 
+                    colClasses=c('factor','factor','factor',
+                                 'factor','numeric','numeric'))) #Select M_SC
+M_SC$W <- sqrt(M_SC$U/(M_SC$U+M_SC$WT))
+M_SC$WTonly <- ifelse(M_SC$W == 0, 1, 0)
+
+hist(M_SC$W)
+```
+
+Step 1: Data visualization
+```{r}
+ggplot(M_SC, aes(x = Replicate, y = WT/(U+WT), fill=Treatment)) +
+    geom_boxplot() +
+    labs(title = "P1 Sperm competition success", x = "Replicate", y = "P1 Siring Success") +
+    theme_classic()
+```
+
+Step 2: Model fitting
+```{r}
+fit5 <- glm(WTonly ~ Treatment*Replicate, family=binomial, data=M_SC)
+Anova(fit5, test.statistic = "F")
+
+fit6 <- lm(log(W) ~ Treatment*Replicate, data=M_SC[M_SC$WTonly!=1,])
+Anova(fit6)
+```
+
+Step 3: Model assumptions - visual tests
+```{r}
+SCOutput <- simulateResiduals(fittedModel=fit5)
+plot(SCOutput)
+testDispersion(SCOutput)
+
+plotResiduals(SCOutput, M_SC$Replicate, quantreg = T)
+
+plot(resid(fit6))
+hist(resid(fit6))
+
+interaction_term <- interaction(M_SC[M_SC$WTonly!=1,]$Treatment, M_SC[M_SC$WTonly!=1,]$Replicate)
+bartlett.test(residuals(fit6)~interaction_term)
+```
+Step 4: Data summary
+```{r}
+Wstats <- M_SC %>% group_by(Treatment, Replicate) %>% summarize(Mean = mean(W), Count = n(), CI = sd(W)*1.96/sqrt(n()))
+
+Wstats1 <- M_SC %>% group_by(Treatment) %>% summarize(Mean = mean(WT/(WT+U)), Count = n(), CI = sd(WT/(WT+U))*1.96/sqrt(n()))
+
+Wstats2 <- M_SC[M_SC$Replicate!="5",] %>% group_by(Treatment) %>% summarize(Mean = mean(WT/(WT+U)), Count = n(), CI = sd(WT/(WT+U))*1.96/sqrt(n()))
+```

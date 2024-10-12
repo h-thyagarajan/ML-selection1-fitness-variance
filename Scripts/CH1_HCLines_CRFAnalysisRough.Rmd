@@ -1,0 +1,235 @@
+---
+title: "HemicloneMale"
+author: "HT"
+date: "2023-08-25"
+output: html_document
+---
+```{r}
+my.data <- read.csv(file.choose())
+fy.data <- read.csv(file.choose())
+str(my.data)
+```
+
+```{r}
+my.data$Selection <- as.factor(my.data$Selection)
+my.data$Line <- as.factor(my.data$Line)
+my.data$Vial <- as.factor(my.data$Vial)
+my.data$Red.Offspring <- as.numeric(my.data$Red.Offspring)
+my.data$Peach.offspring <- as.numeric(my.data$Peach.offspring)
+my.data$Total <- as.numeric(my.data$Red.Offspring+my.data$Peach.offspring)
+my.data$w <- as.numeric(my.data$Red.Offspring/my.data$Total)
+
+hist(my.data$w)
+
+nafree.data <- na.omit(my.data)
+```
+
+```{r}
+fy.data$Selection <- as.factor(fy.data$Selection)
+fy.data$Line <- as.factor(fy.data$Line)
+fy.data$Vial <- as.factor(fy.data$Vial)
+fy.data$Pupal.count <- as.numeric(fy.data$Pupal.count)
+fy.data$Dams.Count <- as.numeric(fy.data$Dams.Count)
+fy.data$Dam.Productivity <- (fy.data$Pupal.count)/(fy.data$Dams.Count)
+fy.data$w <- (fy.data$Dam.Productivity-mean(fy.data$Dam.Productivity))/sd(fy.data$Dam.Productivity)
+
+hist(fy.data$w)
+```
+
+```{r}
+mdata <- nafree.data %>% group_by(Selection, Line) %>% summarise(male_w=mean(w), male_sd=sd(w), m.count=n()); mdata
+
+fdata <- fy.data %>% group_by(Selection, Line) %>% summarise(female_w=mean(w), female_sd=sd(w), f.count=n()); fdata
+
+linedata <- cbind(mdata, fdata[, 3:5])
+```
+
+
+```{r}
+statsdata <- linedata %>% group_by(Selection) %>% summarise(
+  male.mean=mean(male_w), 
+  female.mean=mean(female_w), 
+  male.var=sd(male_w)^2, 
+  fmale.var=sd(female_w)^2, 
+  count=n()); 
+
+library(lme4)
+library(nlme)
+
+male.fit <- lme(
+  (Red.Offspring)/(Total) ~ Selection, 
+  random = ~1|Line, 
+  data = nafree.data, 
+  method = "REML")
+#var_comp <- r.squaredGLMM(male.fit)
+anova(male.fit)
+
+female.fit <- lme(
+  (w) ~ Selection, 
+  random = ~1|Line, 
+  data = fy.data, 
+  method = "REML")
+
+anova(female.fit)
+```
+Male genetic variance 
+```{r}
+linefitML <- lmer(
+  w ~ 1 + (1|Line), 
+  data = nafree.data[nafree.data$Selection=="ML",])
+
+summary(linefitML)
+0.001369/(0.001369+0.025540)
+varcomp_ML <- r.squaredGLMM(linefitML)
+linevar_ML <- varcomp_ML[2]-varcomp_ML[1]
+
+linefitMC <- lmer(
+  w ~ 1 + (1|Line), 
+  data = nafree.data[nafree.data$Selection=="MC",])
+
+summary(linefitMC)
+0.007307/(0.007307+0.033962)
+varcomp_MC <- r.squaredGLMM(linefitMC)
+linevar_MC <- varcomp_MC[2]-varcomp_MC[1]
+
+MaleVar <- data.frame(cbind(linevar_ML,linevar_MC))
+```
+
+Female genetic variance 
+
+```{r}
+linefitML <- lmer(
+  w ~ 1 + (1|Line), 
+  data = fy.data[fy.data$Selection=="ML",])
+
+summary(linefitML)
+0.4776/(0.4776+0.5451)
+varcomp_ML <- r.squaredGLMM(linefitML)
+linevar_ML <- varcomp_ML[2]-varcomp_ML[1]
+
+linefitMC <- lmer(
+  w ~ 1 + (1|Line), 
+  data = fy.data[fy.data$Selection=="MC",])
+
+summary(linefitMC)
+0.4051/(0.4051+0.5503)
+varcomp_MC <- r.squaredGLMM(linefitMC)
+linevar_MC <- varcomp_MC[2]-varcomp_MC[1]
+
+FemaleVar <- data.frame(cbind(linevar_ML,linevar_MC))
+```
+
+```{r}
+f.male <- as.numeric(MaleVar[1,2])/as.numeric(MaleVar[1,1])
+p.male <- pf(f.male, 37, 37, lower.tail=F)
+
+f.female <- as.numeric(FemaleVar[1,1])/as.numeric(FemaleVar[1,2])
+p.female <- pf(f.female, 37, 37, lower.tail=F)
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(linedata, aes(x = male_w, y = female_w, color = Selection)) +
+  geom_point() + geom_smooth(method = "lm") +
+  labs(x = "Male Competitive Fitness", y = "Female Productivity", title = "Hemiclone fitness analysis") +
+  theme_classic()
+```
+
+
+```{r}
+x <- seq(0, 1, length.out = 1000)
+y1 <- dnorm(x, mean = mc_mean, sd = mc_sd)
+y2 <- dnorm(x, mean = ml_mean, sd = ml_sd)
+
+# Create the plot
+plot(x, y1, type = "l", col = "blue", lwd = 2, ylab = "Density", xlab = "x", ylim = c(0,5), main = "Male Fitness Dists")
+lines(x, y2, col = "red", lwd = 2)
+polygon(c(x, rev(x)), c(y1, rep(0, length(y1))), col = rgb(0, 0, 1, alpha = 0.3), border = NA)
+polygon(c(x, rev(x)), c(y2, rep(0, length(y2))), col = rgb(1, 0, 0, alpha = 0.3), border = NA)
+legend("topright", legend = c("Distribution 1", "Distribution 2"), col = c("blue", "red"), lwd = 2)
+
+# Add gridlines
+grid()
+
+# Add a legend
+legend("topright", legend = c("Control Fitness", "ML Fitness"), col = c("blue", "red"), lwd = 2)
+
+```
+```{r}
+MC_w_hist <- hist(nafree.data[nafree.data$Selection == 'MC',]$w, breaks = 10, xlab = "Fitness", freq = F)
+
+ML_w_hist <- hist(nafree.data[nafree.data$Selection == 'ML',]$w, breaks = 10, xlab = "Fitness", freq = F)
+
+plot(MC_w_hist, col=rgb(0,0,1,1/4), xlim=c(0,1), ylim=c(0,3), xlab = "Cort levels", main = "Overall fitness", freq = F)
+plot(ML_w_hist, col=rgb(1,0,0,1/4), xlim=c(0,1), ylim=c(0,3), freq = F, add=T)
+legend(7, 0.38, legend=c("MC Lines", "ML Lines"),
+       col=c("blue", "red"), lty=1:1, cex=0.8)
+```
+
+
+```{r}
+MC_lines_hist <- hist(linedata[linedata$Selection == 'MC',]$mean_propred, breaks = 5, xlab = "Fitness", freq = F)
+
+ML_lines_hist <- hist(linedata[linedata$Selection == 'ML',]$mean_propred, breaks = 5, xlab = "Fitness", freq = F)
+
+plot(MC_lines_hist, col=rgb(0,0,1,1/4), xlim=c(0,1), ylim=c(0,4), xlab = "Cort levels", main = "Hemiclone lines fitness", freq = F)
+plot(ML_lines_hist, col=rgb(1,0,0,1/4), xlim=c(0,1), ylim=c(0,4), freq = F, add=T)
+legend(7, 0.38, legend=c("MC Lines", "ML Lines"),
+       col=c("blue", "red"), lty=1:1, cex=0.8)
+```
+```{r}
+simdat <- linedata
+simdat$stderror <- simdat$sd_propred/sqrt(simdat$count)
+simdat$female.prod <- abs(rnorm(76, 0.5, 0.2))
+
+library(ggplot2)
+
+ggplot(simdat, aes(x = mean_propred, y = female.prod, color = Selection)) +
+  geom_point() + geom_smooth(method = "lm") +
+  labs(x = "Male Fitness", y = "Female Fitness", title = "Hemiclone fitness analysis") +
+  theme_classic()
+
+plot(simdat$mean_propred, simdat$female.prod, col = simdat$Selection, pch = 19, xlab = "Male fitness", ylab = "Female fitness", xlim = c(0,1), ylim = c(0,1), main = "hemiclone line fitness")
+```
+
+```{r}
+simdat$sd.fprod <- simdat$sd_propred
+
+ggplot(simdat, aes(x = mean_propred, y = female.prod)) + 
+  geom_point() + 
+  geom_errorbar(aes(ymin = female.prod - stderror, ymax = female.prod + stderror), width = 0.02) + 
+  geom_errorbarh(aes(xmin = mean_propred - stderror, xmax = mean_propred + stderror), height = 0.02) + 
+  geom_smooth(method = "lm") +
+  labs(x = "Mean of Measure A", y = "Mean of Measure B", title = "Scatter Plot with Standard Deviation Whiskers") + theme_classic()
+
+```
+
+
+
+```{r}
+simdat1 <- linedata
+femMC <- abs(rnorm(38, 0.5, 0.2))
+femML <- abs(rnorm(38, 0.3, 0.3))
+simdat1$female.prod <- c(femMC, femML)
+
+ggplot(simdat1, aes(x = mean_propred, y = female.prod, color = Selection)) +
+  geom_point() + geom_smooth(method = "lm") +
+  labs(x = "Male Fitness", y = "Female Fitness", title = "Hemiclone fitness analysis") +
+  theme_classic()
+
+plot(simdat1$mean_propred, simdat1$female.prod, col = simdat1$Selection, pch = 19, xlab = "Male fitness", ylab = "Female fitness", xlim = c(0,1), ylim = c(0,1), main = "hemiclone line fitness")
+```
+```{r}
+simdat2 <- linedata
+simdat2$female.prod <- abs(rnorm(76, 1, 0.2)-linedata$mean_propred) 
+femML <- abs(rnorm(38, 0.2, 0.3))
+simdat2$female.prod[39:76] <- c(femML)
+
+ggplot(simdat2, aes(x = mean_propred, y = female.prod, color = Selection)) +
+  geom_point() + geom_smooth(method = "lm") +
+  labs(x = "Male Fitness", y = "Female Fitness", title = "Hemiclone fitness analysis") +
+  theme_classic()
+
+plot(simdat1$mean_propred, simdat1$female.prod, col = simdat1$Selection, pch = 19, xlab = "Male fitness", ylab = "Female fitness", xlim = c(0,1), ylim = c(0,1), main = "hemiclone line fitness")
+```

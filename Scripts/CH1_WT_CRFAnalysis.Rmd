@@ -1,0 +1,325 @@
+---
+title: "Ch1 Fitness"
+author: "HT"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(dplyr)
+require(ggplot2)
+require(ggfortify)
+require(MuMIn)
+require(gridExtra)
+require(car)
+require(agricolae)
+require(nlme)
+require(lme4)
+require(lmerTest)
+require(emmeans)
+```
+
+##################################################
+**Generation 50 - Male fitness**
+##################################################
+
+Data input, subset
+```{r}
+M_CRF <- na.omit(read.csv(file.choose(),
+                    colClasses=c('factor','factor','factor','factor', 'factor',
+                                 'numeric','numeric')))
+
+M_CRF_gen50 <- M_CRF %>% filter(Gen=="50")
+```
+
+Step 1: Data visualization
+```{r}
+M_CRF_gen50 %>% 
+  ggplot() +
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() +
+  labs(title = "Male fitness Gen 50", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_classic()
+```
+Step 2: Model fitting
+
+```{r}
+fit1 <- lmer((Red)/(Red+Brown) ~ Treatment*Replicate + (1|Contest), 
+                          data=M_CRF_gen50); 
+summary(fit1)
+anova(fit1)
+```
+Step 3: Model assumptions - visual tests
+
+```{r}
+plot(resid(fit1))
+hist(resid(fit1))
+
+interaction_term <- interaction(M_CRF_gen50$Treatment, M_CRF_gen50$Replicate)
+bartlett.test(residuals(fit1)~interaction_term)
+bartlett.test(residuals(fit1)~M_CRF_gen50$Treatment)
+bartlett.test(residuals(fit1)~M_CRF_gen50$Replicate)
+```
+Step 4: Contrast testing
+```{r}
+#corrected.alpha
+a = 0.05
+n = 3
+c.a <- 1-((1-a)^(1/n)); c.a
+  
+summary(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=M_CRF_gen50[M_CRF_gen50$Replicate=="1",]))
+summary(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=M_CRF_gen50[M_CRF_gen50$Replicate=="3",]))
+summary(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=M_CRF_gen50[M_CRF_gen50$Replicate=="5",]))
+```
+
+Step 5: Data summary
+
+```{r}
+M_CRF_gen50 %>% group_by(Treatment) %>% summarise(Mean=mean(Red/(Red+Brown)), CI=1.96*sd(Red/(Red+Brown))/sqrt(n()), count=n())
+```
+
+##################################################
+**Generation 64 - Male fitness**
+##################################################
+
+Data input, structure management
+```{r}
+M_CRF_gen64 <- M_CRF %>% filter(Gen=="64")
+```
+
+Step 1: Data visualization
+```{r}
+M_CRF_gen64 %>% 
+  ggplot() +
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() +
+  labs(title = "Male fitness Gen 64", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_classic()
+```
+
+Step 2: Model fitting
+
+```{r}
+fit2 <- lmer((Red)/(Red+Brown) ~ Treatment*Replicate + (1|Contest), 
+                          data=M_CRF_gen64)
+summary(fit2)
+anova(fit2)
+```
+
+Step 3: Model assumptions - visual tests
+
+```{r}
+plot(resid(fit2))
+hist(resid(fit2))
+
+interaction_term <- interaction(M_CRF_gen64$Treatment, M_CRF_gen64$Replicate)
+bartlett.test(residuals(fit2)~interaction_term)
+bartlett.test(residuals(fit2)~M_CRF_gen64$Treatment)
+bartlett.test(residuals(fit2)~M_CRF_gen64$Replicate)
+```
+Step 4: Contrast testing
+
+```{r}
+summary(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=M_CRF_gen64[M_CRF_gen64$Replicate=="1",]))
+summary(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=M_CRF_gen64[M_CRF_gen64$Replicate=="3",]))
+summary(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=M_CRF_gen64[M_CRF_gen64$Replicate=="5",]))
+```
+
+Step 5: Data summary
+
+```{r}
+M_CRF_gen64 %>% group_by(Treatment) %>% summarise(Mean=mean(Red/(Red+Brown)), CI=1.96*sd(Red/(Red+Brown))/sqrt(n()), count=n())
+```
+
+##################################################
+**Generation 70 - Male fitness**
+##################################################
+
+Data input, structure management
+```{r}
+M_CRF_gen70 <- M_CRF %>% filter(Gen == "70")
+```
+
+Step 1: Data visualization
+```{r}
+M_CRF_gen70 %>% 
+  ggplot() +
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() +
+  labs(title = "Male fitness Gen 70", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_classic()
+```
+
+Step 2: Model fitting
+
+```{r}
+fit3 <- lmer((Red)/(Red+Brown) ~ Treatment*Replicate + (1|Contest), 
+                          data=M_CRF_gen70)
+summary(fit3)
+anova(fit3)
+```
+
+
+Step 3: Model assumptions - visual tests
+
+```{r}
+plot(resid(fit3))
+hist(resid(fit3))
+interaction_term <- interaction(M_CRF_gen70$Treatment, M_CRF_gen70$Replicate)
+bartlett.test(residuals(fit3)~interaction_term)
+bartlett.test(residuals(fit3)~M_CRF_gen70$Treatment)
+bartlett.test(residuals(fit3)~M_CRF_gen70$Replicate)
+```
+Step 4: Contrast testing
+```{r}
+fit3a <- lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=M_CRF_gen70)
+summary(fit3a)
+```
+
+
+```{r}
+emm1 <- emmeans(fit3a, specs=~Treatment)
+emmeans(emm1, pairwise~Treatment)
+
+#alpha correction
+a = 0.05
+n = 6
+c.a <- 1-((1-a)^(1/n)); c.a
+```
+
+Step 5: Data summary
+
+```{r}
+M_CRF_gen70 %>% group_by(Treatment) %>% summarise(Mean=mean(Red/(Red+Brown)), CI=1.96*sd(Red/(Red+Brown))/sqrt(n()), count=n())
+```
+
+
+##################################################
+**Generation 48 - Female fitness**
+##################################################
+
+Data input, subset
+```{r}
+F_CRF <- na.omit(read.csv(file.choose(), #Select F_CRF_gen50
+                    colClasses=c('factor','factor','factor','factor',
+                                 'factor','numeric','numeric')))
+F_CRF_gen48 <- F_CRF %>% filter(Gen=="48")
+```
+
+Step 1: Data visualization
+```{r}
+F_CRF_gen48 %>% 
+  ggplot() +
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() +
+  labs(title = "Female fitness Gen 48", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_classic()
+```
+
+Step 2: Model fitting
+
+```{r}
+fit4 <- lmer((Red)/(Red+Brown) ~ Treatment*Replicate + (1|Contest1), 
+                          data=F_CRF_gen48)
+summary(fit4)
+anova(fit4)
+```
+
+
+Step 3: Model assumptions - visual tests
+
+```{r}
+plot(resid(fit4))
+hist(resid(fit4))
+
+interaction_term <- interaction(F_CRF_gen48$Treatment, F_CRF_gen48$Replicate)
+bartlett.test(residuals(fit4)~interaction_term)
+bartlett.test(residuals(fit4)~F_CRF_gen48$Treatment)
+bartlett.test(residuals(fit4)~F_CRF_gen48$Replicate)
+```
+
+Step 4: Contrast testing
+
+```{r}
+summary(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=F_CRF_gen48[F_CRF_gen48$Replicate=="1",]))
+summary(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=F_CRF_gen48[F_CRF_gen48$Replicate=="3",]))
+summary(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=F_CRF_gen48[F_CRF_gen48$Replicate=="5",]))
+```
+
+Step 5: Data summary
+
+```{r}
+F_CRF_gen48 %>% group_by(Treatment) %>% summarise(Mean=mean(Red/(Red+Brown)), CI=1.96*sd(Red/(Red+Brown))/sqrt(n()), count=n())
+```
+
+##################################################
+**Generation 50 - Female fitness**
+##################################################
+
+Data input, subset
+```{r}
+F_CRF_gen50 <- F_CRF %>% filter(Gen=="50")
+```
+
+Step 1: Data visualization
+```{r}
+F_CRF_gen50 %>% 
+  ggplot() +
+  aes(x = Replicate, y = (Red)/(Red + Brown), fill = Treatment) +
+  geom_boxplot() +
+  labs(title = "Female fitness Gen 50", x = "Replicate", y = "Fitness")+ scale_y_continuous(limits = c(0, 1)) + 
+  theme_classic()
+```
+Step 2: Model fitting
+
+```{r}
+fit5 <- lmer((Red)/(Red+Brown) ~ Treatment*Replicate + (1|Contest), 
+                          data=F_CRF_gen50)
+summary(fit5)
+anova(fit5)
+```
+
+Step 3: Model assumptions - visual tests
+
+```{r}
+qqnorm(resid(fit5));qqline(resid(fit5))
+plot(resid(fit5))
+hist(resid(fit5))
+
+interaction_term <- interaction(F_CRF_gen50$Treatment, F_CRF_gen50$Replicate)
+bartlett.test(residuals(fit5)~interaction_term)
+bartlett.test(residuals(fit5)~F_CRF_gen50$Treatment)
+bartlett.test(residuals(fit5)~F_CRF_gen50$Replicate)
+```
+
+Step 4: Contrast testing
+
+```{r}
+anova(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=F_CRF_gen50[F_CRF_gen50$Replicate=="1",]))
+anova(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=F_CRF_gen50[F_CRF_gen50$Replicate=="3",]))
+anova(lmer((Red)/(Red+Brown) ~ Treatment + (1|Contest), 
+                          data=F_CRF_gen50[F_CRF_gen50$Replicate=="5",]))
+
+a = 0.05
+n = 3
+c.a <- 1-((1-a)^(1/n)); c.a
+```
+
+Step 5: Data summary
+
+```{r}
+F_CRF_gen50 %>% group_by(Treatment) %>% summarise(Mean=mean(Red/(Red+Brown)), CI=1.96*sd(Red/(Red+Brown))/sqrt(n()), count=n())
+```

@@ -1,0 +1,206 @@
+---
+title: "Ch1 Hemiclonal fitness analysis"
+author: "HT"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(dplyr)
+require(ggplot2)
+require(ggfortify)
+require(MuMIn)
+require(gridExtra)
+require(car)
+require(agricolae)
+require(nlme)
+require(lme4)
+require(lmerTest)
+require(DHARMa)
+require(emmeans)
+```
+
+##################################################
+**Generation ? - HC lines Male fitness **
+##################################################
+
+Data input, structure management
+```{r}
+M_HC.CRF <- na.omit(read.csv(file.choose())) #Select M_HClines
+F_HC.CRF <- na.omit(read.csv(file.choose())) #Select F_HClines
+
+cols <- c("Selection", "Line", "Vial")
+M_HC.CRF[cols] <- lapply(M_HC.CRF[cols], factor) 
+M_HC.CRF <- M_HC.CRF %>%
+  group_by(Selection, Line) %>%
+  mutate(Line = group_indices())
+
+F_HC.CRF[cols] <- lapply(F_HC.CRF[cols], factor) 
+F_HC.CRF <- F_HC.CRF %>%
+  group_by(Selection, Line) %>%
+  mutate(Line = group_indices())
+
+mdata <- M_HC.CRF %>% group_by(Selection, Line) %>% summarise(male_w=mean(w), male_sd=sd(w), m.count=n())
+fdata <- F_HC.CRF %>% group_by(Selection, Line) %>% summarise(female_w=mean(w), female_sd=sd(w), f.count=n())
+
+linedata <- cbind(mdata, fdata[, 3:5])
+```
+
+Step 1: Data visualization
+```{r}
+ggplot(linedata, aes(x = female_w, y = male_w, color = Selection)) +
+  geom_point() + geom_smooth(method = "lm") +
+  labs(x = "Female Productivity", 
+       y = "Male Competitive Fitness", 
+       title = "Hemiclone fitness analysis") +
+  theme_classic()
+```
+Step 2: Model fitting
+
+```{r}
+male.fit <- lmer((Red.Offspring)/(Total) ~ Selection+(1|Line), data = M_HC.CRF)
+anova(male.fit)
+
+female.fit <- lmer(Dam.Productivity ~ Selection+(1|Line), data = F_HC.CRF)
+anova(female.fit)
+```
+Step 3: Model assumptions - visual tests
+
+```{r}
+bartlett.test(residuals(male.fit)~M_HC.CRF$Selection)
+bartlett.test(residuals(female.fit)~F_HC.CRF$Selection)
+
+plot(resid(male.fit))
+hist(resid(male.fit))
+
+plot(resid(female.fit))
+hist(resid(female.fit))
+```
+Step 4: Variance testing
+
+```{r}
+linefitML <- lmer(
+  w ~ 1 + (1|Line), 
+  data = M_HC.CRF[M_HC.CRF$Selection=="ML",])
+
+summary(linefitML)
+0.001369/(0.001369+0.025540)
+varcomp_ML <- r.squaredGLMM(linefitML)
+linevar_ML <- varcomp_ML[2]-varcomp_ML[1]
+
+linefitMC <- lmer(
+  w ~ 1 + (1|Line), 
+  data = M_HC.CRF[M_HC.CRF$Selection=="MC",])
+
+summary(linefitMC)
+0.007307/(0.007307+0.033962)
+varcomp_MC <- r.squaredGLMM(linefitMC)
+linevar_MC <- varcomp_MC[2]-varcomp_MC[1]
+
+MaleVar <- data.frame(cbind(linevar_ML,linevar_MC))
+
+f.male <- as.numeric(MaleVar[1,2])/as.numeric(MaleVar[1,1])
+p.male <- pf(f.male, 37, 37, lower.tail=F)
+```
+
+```{r}
+x <- seq(0, 1, length=100)
+y1 <- dnorm(x, mean=0.5534155, sd=0.163961)
+y1 <- y1/max(y1)
+y2 <- dnorm(x, mean=0.454156, sd=0.2026641)
+y2 <- y2/max(y2)
+y.1 <- dnorm(x, mean=0.5534155, sd=0.037)
+y.1 <- y.1/max(y.1)
+y.2 <- dnorm(x, mean=0.454156, sd=0.08548099)
+y.2 <- y.2/max(y.2)
+
+df <- data.frame(x=x, y1=y1, y2=y2, y.1=y.1, y.2=y.2)
+
+ggplot(df, aes(x=x)) +
+  geom_line(aes(y=y1), color="#00BFC9", linetype = "dashed") +
+  geom_line(aes(y=y.1), color="#00BFC9") +
+  geom_ribbon(aes(ymin=0, ymax=y.1), fill="#00BFC9", alpha=0.3) +
+  geom_line(aes(y=y2), color="#F8766D", linetype = "dashed") +
+  geom_line(aes(y=y.2), color="#F8766D") +
+  geom_ribbon(aes(ymin=0, ymax=y.2), fill="#F8766D", alpha=0.3) +
+  theme_classic()
+
+# Plot histogram
+ggplot() +
+  geom_histogram(aes(x = M_HC.CRF[M_HC.CRF$Selection=="ML",]$w),bins=8, fill = "#00BFC9", color = "black") +
+  theme_pub
+
+ggplot() +
+  geom_histogram(aes(x = M_HC.CRF[M_HC.CRF$Selection=="MC",]$w),bins=8, fill = "#F8766D", color = "black") +
+  theme_pub
+```
+
+
+Female genetic variance 
+
+```{r}
+linefitML <- lmer(
+  w ~ 1 + (1|Line), 
+  data = F_HC.CRF[F_HC.CRF$Selection=="ML",])
+
+summary(linefitML)
+0.4776/(0.4776+0.5451)
+varcomp_ML <- r.squaredGLMM(linefitML)
+linevar_ML <- varcomp_ML[2]-varcomp_ML[1]
+
+linefitMC <- lmer(
+  w ~ 1 + (1|Line), 
+  data = F_HC.CRF[F_HC.CRF$Selection=="MC",])
+
+summary(linefitMC)
+0.4051/(0.4051+0.5503)
+varcomp_MC <- r.squaredGLMM(linefitMC)
+linevar_MC <- varcomp_MC[2]-varcomp_MC[1]
+
+FemaleVar <- data.frame(cbind(linevar_ML,linevar_MC))
+
+f.female <- as.numeric(FemaleVar[1,1])/as.numeric(FemaleVar[1,2])
+p.female <- pf(f.female, 37, 37, lower.tail=F)
+```
+
+Step 5: Data summary
+
+```{r}
+statsdata <- linedata %>% group_by(Selection) %>% summarise(
+  male.mean=mean(male_w), 
+  female.mean=mean(female_w), 
+  male.var=sd(male_w)^2, 
+  fmale.var=sd(female_w)^2, 
+  CI_male=1.96*sd(male_w)/sqrt(n()),
+  count=n());
+```
+
+```{r}
+summary(lm(male_w~female_w, data=linedata[linedata$Selection=="ML",]))
+cor.test(linedata[linedata$Selection=="ML",]$male_w, linedata[linedata$Selection=="ML",]$female_w)
+ML.C <- as.numeric(cor.test(linedata[linedata$Selection=="ML",]$male_w, linedata[linedata$Selection=="ML",]$female_w)$estimate)
+
+summary(lm(male_w~female_w, data=linedata[linedata$Selection=="MC",]))
+cor.test(linedata[linedata$Selection=="MC",]$male_w, linedata[linedata$Selection=="MC",]$female_w)
+
+MC.C <- as.numeric(cor.test(linedata[linedata$Selection=="MC",]$male_w, linedata[linedata$Selection=="MC",]$female_w)$estimate)
+
+z.obs <- ML.C-MC.C / sqrt(2/35)
+pnorm(z.obs)
+```
+
+```{r}
+summary(lm(male_w~female_w, data=linedata[linedata$Selection=="ML",]))
+ML_cor <- cor.test(linedata[linedata$Selection=="ML",]$male_w, linedata[linedata$Selection=="ML",]$female_w)
+ML.C <- as.numeric(ML_cor$estimate)
+
+summary(lm(male_w~female_w, data=linedata[linedata$Selection=="MC",]))
+MC_cor <- cor.test(linedata[linedata$Selection=="MC",]$male_w, linedata[linedata$Selection=="MC",]$female_w)
+
+MC.C <- as.numeric(MC_cor$estimate)
+
+z.obs <- ML.C-MC.C / sqrt(2/35)
+pnorm(z.obs)
+```
+
