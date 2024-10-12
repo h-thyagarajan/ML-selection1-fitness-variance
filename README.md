@@ -6,7 +6,7 @@ This data was collected to answer whether experimentally selecting exclusively o
 
 The presented data is derived from competitive reproductive fitness (CRF) assays, mate choice, sperm offense assays. Fitness assays were conducted on samples from the selected and control populations directly, but also on hemiclonal samples to assay heritable variation.
 
-## A description of specific .csv files:
+## A description of .csv files:
 
 ### Population CRF: 'F_CRF_wt.cr.csv’; 'M_CRF_wt.cr.csv’ - female and male data respectively.
 30 test animals combined with 30 recessively marked competitors of the same sex and 50 recesively marked individuals of the opposite sex. 6 such contests were conducted in each treatment. 6 vials of eggs collected for each. Offspring phenotyped for fitness estimates.
